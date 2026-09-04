@@ -10,6 +10,12 @@ class SiteConditions(BaseModel):
     slope: float = Field(ge=0, le=60)
     moisture: float = Field(ge=0, le=100)
 
+class CitizenReport(BaseModel):
+    latitude: float = Field(ge=21, le=30)
+    longitude: float = Field(ge=87, le=98)
+    incident_type: str = Field(min_length=2, max_length=80)
+    description: str = Field(default="", max_length=2000)
+
 def assess_risk(site: SiteConditions) -> dict:
     score = min(100, round(site.rainfall / 4 + site.slope * 0.7 + site.moisture * 0.25))
     if score >= 65:
@@ -30,3 +36,12 @@ def health() -> dict:
 @app.post("/api/risk")
 def risk(site: SiteConditions) -> dict:
     return assess_risk(site)
+
+@app.post("/api/reports")
+def create_report(report: CitizenReport) -> dict:
+    """Prototype report contract; production storage belongs behind this seam."""
+    return {
+        "status": "received",
+        "mode": "PROTOTYPE",
+        "report": report.model_dump(),
+    }
