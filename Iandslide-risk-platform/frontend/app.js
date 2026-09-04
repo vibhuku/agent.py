@@ -8,17 +8,32 @@ const locations = [
 ];
 const demoReports = [{ lat: 27.33, lon: 88.61, text: 'Road blocked · NH-10' }, { lat: 25.68, lon: 94.1, text: 'Fresh ground movement' }];
 const $ = (selector) => document.querySelector(selector);
-const map = L.map('map', { zoomControl: false }).setView([25.9, 92.8], 6);
+const indiaBounds = [[6.5, 68], [35.8, 97.8]];
+const map = L.map('map', { zoomControl: false, maxBounds: indiaBounds, maxBoundsViscosity: 1, minZoom: 4.6, maxZoom: 18 }).fitBounds(indiaBounds, { padding: [12, 12] });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 18 }).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 18, subdomains: 'abcd' }).addTo(map);
 const markers = L.layerGroup().addTo(map);
 const reports = L.layerGroup().addTo(map);
 const rainfallLayer = L.layerGroup();
+const stateLabels = L.layerGroup().addTo(map);
+L.rectangle([[21.3, 88.8], [29.6, 97.4]], { color: '#53d8d0', weight: 1.5, dashArray: '5 6', fillColor: '#53d8d0', fillOpacity: 0.04, interactive: false }).addTo(stateLabels);
+L.marker([29.35, 95.4], { icon: L.divIcon({ className: 'ner-focus-label', html: 'NER RISK MONITORING FOCUS', iconSize: [150, 20], iconAnchor: [150, 10] }), interactive: false }).addTo(stateLabels);
 const riskColors = { Low: '#52d68b', Moderate: '#f3b64b', High: '#fa6671' };
 let selected = locations[0];
 let selectedCoords = { lat: selected.lat, lon: selected.lon };
 window.addEventListener('resize', () => map.invalidateSize());
 setTimeout(() => map.invalidateSize(), 100);
+[
+  ['Rajasthan', 27.0, 73.8], ['Gujarat', 22.7, 71.6], ['Maharashtra', 19.2, 76.2],
+  ['Madhya Pradesh', 23.5, 78.2], ['Uttar Pradesh', 26.8, 80.6], ['West Bengal', 23.7, 87.8],
+  ['Odisha', 20.5, 84.4], ['Karnataka', 15.2, 76.1], ['Tamil Nadu', 11.1, 78.4],
+  ['Assam', 26.2, 92.9], ['Arunachal Pradesh', 28.2, 94.1], ['Meghalaya', 25.5, 91.3],
+  ['Manipur', 24.7, 93.8], ['Mizoram', 23.5, 92.8], ['Nagaland', 26.1, 94.4],
+  ['Tripura', 23.8, 91.6], ['Sikkim', 27.5, 88.5]
+].forEach(([name, lat, lon]) => L.marker([lat, lon], {
+  icon: L.divIcon({ className: 'english-state-label', html: `<span>${name}</span>`, iconSize: [130, 20], iconAnchor: [65, 10] }),
+  interactive: false
+}).addTo(stateLabels));
 
 function riskLevel(score) { return score >= 70 ? 'High' : score >= 40 ? 'Moderate' : 'Low'; }
 function addRiskMarkers() {
@@ -64,16 +79,17 @@ function renderAssessment(location, weather = null, mode = 'DEMO') {
   setText('assessment-mode', mode); setText('data-mode', mode === 'LIVE' ? '● LIVE' : '● DEMO / OFFLINE');
   const ring = $('#risk-ring'); ring.parentElement.parentElement.className = `risk-readout ${level.toLowerCase()}`; ring.style.setProperty('--score', `${location.score * 3.6}deg`);
   $('#warning-banner').className = `warning-banner ${level.toLowerCase()}`;
-  setText('rain-24', weather?.rain ?? location.rain); setText('rain-72', weather?.rain72 ?? location.rain72); setText('temperature', weather?.temperature ?? '22.4'); setText('humidity', weather?.humidity ?? '86'); setText('wind', weather?.wind ?? '8'); setText('pressure', weather?.pressure ?? '1008');
+  setText('rain-24', weather?.rain ?? location.rain); setText('rain-72', weather?.rain72 ?? location.rain72); setText('rain-probability', weather?.probability ?? '--'); setText('elevation', weather?.elevation ?? '--'); setText('estimated-slope', location.slope); setText('temperature', weather?.temperature ?? '22.4'); setText('humidity', weather?.humidity ?? '86'); setText('wind', weather?.wind ?? '8'); setText('pressure', weather?.pressure ?? '1008');
   setText('rain-driver-value', `${Math.min(99, Math.round((weather?.rain ?? location.rain) / 1.5))}%`); $('#rain-driver').style.width = `${Math.min(99, Math.round((weather?.rain ?? location.rain) / 1.5))}%`;
   setText('slope-driver-value', `${location.slope}%`); $('#slope-driver').style.width = `${location.slope}%`; setText('terrain-driver-value', `${location.terrain}%`); $('#terrain-driver').style.width = `${location.terrain}%`;
 }
 async function fetchWeather(location) {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,precipitation,pressure_msl,wind_speed_10m&hourly=precipitation,precipitation_probability&past_days=3&forecast_days=1&timezone=Asia%2FKolkata`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,precipitation,pressure_msl,wind_speed_10m&hourly=precipitation,precipitation_probability&daily=precipitation_probability_max&past_days=3&forecast_days=1&timezone=Asia%2FKolkata`;
     const response = await fetch(url); if (!response.ok) throw new Error('Weather request failed');
     const data = await response.json(); const current = data.current; const rain = data.hourly.precipitation.slice(-24).reduce((sum, value) => sum + (value || 0), 0); const rain72 = data.hourly.precipitation.slice(-72).reduce((sum, value) => sum + (value || 0), 0);
-    renderAssessment(location, { temperature: current.temperature_2m.toFixed(1), humidity: current.relative_humidity_2m, wind: Math.round(current.wind_speed_10m), pressure: Math.round(current.pressure_msl), rain: rain.toFixed(1), rain72: rain72.toFixed(1) }, 'LIVE');
+    const elevation = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${location.lat}&longitude=${location.lon}`).then((response) => response.ok ? response.json() : null);
+    renderAssessment(location, { temperature: current.temperature_2m.toFixed(1), humidity: current.relative_humidity_2m, wind: Math.round(current.wind_speed_10m), pressure: Math.round(current.pressure_msl), rain: rain.toFixed(1), rain72: rain72.toFixed(1), probability: data.daily?.precipitation_probability_max?.[0] ?? '--', elevation: elevation?.elevation?.[0] ?? '--' }, 'LIVE');
   } catch (error) { renderAssessment(location, null, 'DEMO'); }
 }
 function selectLocation(location) { map.flyTo([location.lat, location.lon], 9, { duration: .8 }); renderAssessment(location); fetchWeather(location); }
@@ -130,3 +146,4 @@ $('#report-form').addEventListener('submit', (event) => {
   $('#form-success').classList.add('visible');
 });
 $('#menu-toggle').addEventListener('click', () => document.querySelector('nav').classList.toggle('mobile-open'));
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?version=2'));

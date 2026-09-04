@@ -1,0 +1,10 @@
+{
+  "name": "Landslide Sentinel — NER India",
+  "short_name": "Landslide Sentinel",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#06111a",
+  "theme_color": "#06111a",
+  "description": "Prototype landslide risk monitoring and early warning for North Eastern India.",
+  "icons": []
+}
