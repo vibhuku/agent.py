@@ -9,7 +9,19 @@ const locations = [
 const demoReports = [{ lat: 27.33, lon: 88.61, text: 'Road blocked · NH-10' }, { lat: 25.68, lon: 94.1, text: 'Fresh ground movement' }];
 const $ = (selector) => document.querySelector(selector);
 const indiaBounds = [[6.5, 68], [35.8, 97.8]];
-const map = L.map('map', { zoomControl: false, maxBounds: indiaBounds, maxBoundsViscosity: 1, minZoom: 3.2, maxZoom: 18 }).fitBounds(indiaBounds, { padding: [12, 12] });
+const map = L.map('map', {
+  zoomControl: false,
+  dragging: true,
+  touchZoom: true,
+  doubleClickZoom: true,
+  scrollWheelZoom: true,
+  boxZoom: true,
+  keyboard: true,
+  maxBounds: indiaBounds,
+  maxBoundsViscosity: 1,
+  minZoom: 3.2,
+  maxZoom: 18
+}).fitBounds(indiaBounds, { padding: [12, 12] });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 const mapStyles = {
   satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri, Maxar, Earthstar Geographics', maxZoom: 18 }),
@@ -164,4 +176,4 @@ $('#report-form').addEventListener('submit', (event) => {
   $('#form-success').classList.add('visible');
 });
 $('#menu-toggle').addEventListener('click', () => document.querySelector('nav').classList.toggle('mobile-open'));
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?version=4'));
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?version=5'));

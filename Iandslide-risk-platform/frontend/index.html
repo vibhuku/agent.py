@@ -22,6 +22,22 @@
     .map-layer-panel select{width:190px;padding:8px;border:1px solid var(--line);background:#102433;color:var(--text);font:10px var(--mono)}
     .map-layer-panel .layer-title{margin-top:6px}
     .risk-pulse-zone{animation:riskPulse 2.4s ease-in-out infinite}
+    .map-overlay-label,.map-layer-panel,.map-legend{pointer-events:none}
+    .map-overlay-label button,.map-overlay-label input,.map-overlay-label select,.map-overlay-label label,.map-overlay-label a,
+    .map-layer-panel button,.map-layer-panel input,.map-layer-panel select,.map-layer-panel label,.map-layer-panel a,
+    .map-legend button,.map-legend input,.map-legend select,.map-legend label,.map-legend a{pointer-events:auto}
+    #map{touch-action:pan-x pan-y;cursor:grab}
+    #map:active{cursor:grabbing}
+    @media (max-width:700px){
+      .map-layout{min-height:0}
+      .map-wrap{min-height:400px}
+      #map{height:60vh;min-height:400px}
+      .map-layer-panel{right:8px;top:8px;padding:10px;gap:8px}
+      .map-layer-panel select{width:min(190px,calc(100vw - 100px))}
+      .map-overlay-label{left:8px;top:8px}
+      .map-legend{gap:9px;padding:10px 8px}
+      .map-legend small{display:none}
+    }
     @keyframes riskPulse{0%,100%{stroke-opacity:.45;fill-opacity:.08}50%{stroke-opacity:1;fill-opacity:.25}}
     .distribution-list i.low,.timeline-dot.low{background:var(--green)}
     .distribution-list i.moderate,.timeline-dot.moderate{background:var(--amber)}
@@ -85,6 +101,6 @@
       });
     }
   </script>
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
