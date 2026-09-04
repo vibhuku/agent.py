@@ -13,6 +13,7 @@ L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 18 }).addTo(map);
 const markers = L.layerGroup().addTo(map);
 const reports = L.layerGroup().addTo(map);
+const rainfallLayer = L.layerGroup();
 const riskColors = { Low: '#52d68b', Moderate: '#f3b64b', High: '#fa6671' };
 let selected = locations[0];
 let selectedCoords = { lat: selected.lat, lon: selected.lon };
@@ -31,6 +32,16 @@ function addRiskMarkers() {
 function addReports() {
   reports.clearLayers();
   [...demoReports, ...JSON.parse(localStorage.getItem('ner-reports') || '[]')].forEach((report) => L.marker([report.lat, report.lon], { icon: L.divIcon({ className: 'report-marker', html: '⚑', iconSize: [24, 24] }) }).bindTooltip(report.text || 'Citizen report').addTo(reports));
+}
+function addRainfallLayer() {
+  rainfallLayer.clearLayers();
+  locations.forEach((location) => L.circle([location.lat, location.lon], {
+    radius: Math.max(12000, location.rain * 170),
+    color: '#438bd4',
+    fillColor: '#438bd4',
+    fillOpacity: .12,
+    weight: 1
+  }).bindTooltip(`${location.name} · ${location.rain} mm / 24h`).addTo(rainfallLayer));
 }
 function setText(id, value) { const element = $(`#${id}`); if (element) element.textContent = value; }
 function renderAssessment(location, weather = null, mode = 'DEMO') {
@@ -61,7 +72,8 @@ function searchLocation() { const query = $('#location-search').value.trim().toL
 addRiskMarkers(); addReports(); renderAssessment(selected); fetchWeather(selected); setText('last-sync', new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST');
 $('#search-button').addEventListener('click', searchLocation); $('#location-search').addEventListener('input', () => $('#location-search').setCustomValidity('')); $('#location-search').addEventListener('keydown', (event) => { if (event.key === 'Enter') searchLocation(); });
 $('#risk-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(markers) : map.removeLayer(markers)); $('#reports-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(reports) : map.removeLayer(reports));
-$('#rain-layer').addEventListener('change', (event) => event.target.checked ? L.tileLayer('https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=demo', { opacity: .35 }).addTo(map) : null);
+addRainfallLayer();
+$('#rain-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(rainfallLayer) : map.removeLayer(rainfallLayer));
 $('#locate-button').addEventListener('click', () => navigator.geolocation?.getCurrentPosition((position) => { const location = { ...selected, name: 'Your location', region: 'GPS position / NER India', lat: position.coords.latitude, lon: position.coords.longitude }; selectLocation(location); }, () => alert('Location access was unavailable. Select a point on the map instead.')));
 map.on('click', (event) => { const location = { ...selected, name: 'Selected map point', region: 'Coordinates / NER India', lat: event.latlng.lat, lon: event.latlng.lng, code: 'NER', score: 45, rain: 48, rain72: 92, slope: 55, terrain: 52 }; selectLocation(location); });
 document.querySelectorAll('[data-focus]').forEach((button) => button.addEventListener('click', () => selectLocation(locations.find((location) => location.name === 'Gangtok'))));

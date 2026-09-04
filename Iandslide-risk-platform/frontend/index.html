@@ -11,6 +11,12 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="style.css">
+  <style>
+    .risk-readout.moderate,.risk-readout.high,.risk-readout.low{background:transparent}
+    .distribution-list i.low,.timeline-dot.low{background:var(--green)}
+    .distribution-list i.moderate,.timeline-dot.moderate{background:var(--amber)}
+    .distribution-list i.high,.timeline-dot.high{background:var(--red)}
+  </style>
 </head>
 <body>
   <header class="topbar">
