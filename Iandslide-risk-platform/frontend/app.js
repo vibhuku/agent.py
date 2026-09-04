@@ -9,20 +9,26 @@ const locations = [
 const demoReports = [{ lat: 27.33, lon: 88.61, text: 'Road blocked · NH-10' }, { lat: 25.68, lon: 94.1, text: 'Fresh ground movement' }];
 const $ = (selector) => document.querySelector(selector);
 const indiaBounds = [[6.5, 68], [35.8, 97.8]];
-const map = L.map('map', { zoomControl: false, maxBounds: indiaBounds, maxBoundsViscosity: 1, minZoom: 4.6, maxZoom: 18 }).fitBounds(indiaBounds, { padding: [12, 12] });
+const map = L.map('map', { zoomControl: false, maxBounds: indiaBounds, maxBoundsViscosity: 1, minZoom: 3.2, maxZoom: 18 }).fitBounds(indiaBounds, { padding: [12, 12] });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 18, subdomains: 'abcd' }).addTo(map);
+const mapStyles = {
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri, Maxar, Earthstar Geographics', maxZoom: 18 }),
+  terrain: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors', maxZoom: 18 }),
+  standard: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors', maxZoom: 18 })
+};
+let activeStyle = mapStyles.satellite.addTo(map);
 const markers = L.layerGroup().addTo(map);
 const reports = L.layerGroup().addTo(map);
 const rainfallLayer = L.layerGroup();
 const stateLabels = L.layerGroup().addTo(map);
+const highRiskZones = L.layerGroup().addTo(map);
 L.rectangle([[21.3, 88.8], [29.6, 97.4]], { color: '#53d8d0', weight: 1.5, dashArray: '5 6', fillColor: '#53d8d0', fillOpacity: 0.04, interactive: false }).addTo(stateLabels);
 L.marker([29.35, 95.4], { icon: L.divIcon({ className: 'ner-focus-label', html: 'NER RISK MONITORING FOCUS', iconSize: [150, 20], iconAnchor: [150, 10] }), interactive: false }).addTo(stateLabels);
 const riskColors = { Low: '#52d68b', Moderate: '#f3b64b', High: '#fa6671' };
 let selected = locations[0];
 let selectedCoords = { lat: selected.lat, lon: selected.lon };
 window.addEventListener('resize', () => map.invalidateSize());
-setTimeout(() => map.invalidateSize(), 100);
+setTimeout(() => { map.invalidateSize(); map.fitBounds(indiaBounds, { padding: [12, 12], animate: false }); }, 300);
 [
   ['Rajasthan', 27.0, 73.8], ['Gujarat', 22.7, 71.6], ['Maharashtra', 19.2, 76.2],
   ['Madhya Pradesh', 23.5, 78.2], ['Uttar Pradesh', 26.8, 80.6], ['West Bengal', 23.7, 87.8],
@@ -38,8 +44,10 @@ setTimeout(() => map.invalidateSize(), 100);
 function riskLevel(score) { return score >= 70 ? 'High' : score >= 40 ? 'Moderate' : 'Low'; }
 function addRiskMarkers() {
   markers.clearLayers();
+  highRiskZones.clearLayers();
   locations.forEach((location) => {
     const level = riskLevel(location.score);
+    if (level === 'High') L.circle([location.lat, location.lon], { radius: 18000, className: 'risk-pulse-zone', color: '#fa6671', fillColor: '#fa6671', fillOpacity: .12, weight: 1 }).addTo(highRiskZones);
     const marker = L.circleMarker([location.lat, location.lon], { radius: level === 'High' ? 10 : 8, color: riskColors[level], fillColor: riskColors[level], fillOpacity: .8, weight: 2 });
     marker.bindTooltip(`${location.name} · ${level} ${location.score}/100`, { direction: 'top', offset: [0, -8] });
     marker.on('click', () => selectLocation(location));
@@ -77,7 +85,7 @@ function renderAssessment(location, weather = null, mode = 'DEMO') {
   setText('location-status', level === 'High' ? 'Elevated slope instability detected.' : level === 'Moderate' ? 'Stay alert during heavy rainfall.' : 'Conditions are stable today.');
   setText('warning-text', level === 'High' ? 'Avoid unnecessary travel near steep or unstable slopes. Follow official local instructions.' : level === 'Moderate' ? 'Monitor local conditions and avoid unnecessary travel near steep slopes.' : 'Normal monitoring. Stay aware of changing weather and local guidance.');
   setText('assessment-mode', mode); setText('data-mode', mode === 'LIVE' ? '● LIVE' : '● DEMO / OFFLINE');
-  const ring = $('#risk-ring'); ring.parentElement.parentElement.className = `risk-readout ${level.toLowerCase()}`; ring.style.setProperty('--score', `${location.score * 3.6}deg`);
+  const ring = $('#risk-ring'); const readout = ring.closest('.risk-readout'); if (readout) readout.className = `risk-readout ${level.toLowerCase()}`; ring.style.setProperty('--score', `${location.score * 3.6}deg`);
   $('#warning-banner').className = `warning-banner ${level.toLowerCase()}`;
   setText('rain-24', weather?.rain ?? location.rain); setText('rain-72', weather?.rain72 ?? location.rain72); setText('rain-probability', weather?.probability ?? '--'); setText('elevation', weather?.elevation ?? '--'); setText('estimated-slope', location.slope); setText('temperature', weather?.temperature ?? '22.4'); setText('humidity', weather?.humidity ?? '86'); setText('wind', weather?.wind ?? '8'); setText('pressure', weather?.pressure ?? '1008');
   setText('rain-driver-value', `${Math.min(99, Math.round((weather?.rain ?? location.rain) / 1.5))}%`); $('#rain-driver').style.width = `${Math.min(99, Math.round((weather?.rain ?? location.rain) / 1.5))}%`;
@@ -96,7 +104,17 @@ function selectLocation(location) { map.flyTo([location.lat, location.lon], 9, {
 function searchLocation() { const query = $('#location-search').value.trim().toLowerCase(); const match = locations.find((location) => `${location.name} ${location.region}`.toLowerCase().includes(query)); if (match) selectLocation(match); else $('#location-search').setCustomValidity('No monitored location found. Try a city or state.'); $('#location-search').reportValidity(); }
 addRiskMarkers(); addReports(); renderAssessment(selected); fetchWeather(selected); setText('last-sync', new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST');
 $('#search-button').addEventListener('click', searchLocation); $('#location-search').addEventListener('input', () => $('#location-search').setCustomValidity('')); $('#location-search').addEventListener('keydown', (event) => { if (event.key === 'Enter') searchLocation(); });
-$('#risk-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(markers) : map.removeLayer(markers)); $('#reports-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(reports) : map.removeLayer(reports));
+$('#risk-layer').addEventListener('change', (event) => {
+  const layerAction = event.target.checked ? 'addLayer' : 'removeLayer';
+  map[layerAction](markers);
+  map[layerAction](highRiskZones);
+});
+$('#map-style').addEventListener('change', (event) => {
+  const style = event.target.value === 'hybrid' ? 'satellite' : event.target.value;
+  if (activeStyle) map.removeLayer(activeStyle);
+  activeStyle = mapStyles[style] || mapStyles.satellite;
+  activeStyle.addTo(map);
+});
 addRainfallLayer();
 $('#rain-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(rainfallLayer) : map.removeLayer(rainfallLayer));
 $('#locate-button').addEventListener('click', () => {
@@ -146,4 +164,4 @@ $('#report-form').addEventListener('submit', (event) => {
   $('#form-success').classList.add('visible');
 });
 $('#menu-toggle').addEventListener('click', () => document.querySelector('nav').classList.toggle('mobile-open'));
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?version=2'));
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?version=4'));

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#08131e">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="description" content="Landslide Sentinel — live, explainable landslide risk monitoring for North Eastern India.">
-  <title>Landslide Sentinel / NER India</title>
+  <meta name="description" content="Timelass — live, explainable landslide risk monitoring for North Eastern India.">
+  <title>Timelass / NER India</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -19,6 +19,10 @@
     .risk-readout.moderate,.risk-readout.high,.risk-readout.low{background:transparent}
     .english-state-label{background:transparent;border:0;color:#173e4c;font:600 9px var(--mono);letter-spacing:.08em;text-align:center;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,255,255,.8)}
     .ner-focus-label{background:rgba(6,17,26,.86);border:1px solid var(--cyan);color:var(--cyan);font:600 8px var(--mono);letter-spacing:.12em;padding:4px 6px;white-space:nowrap}
+    .map-layer-panel select{width:190px;padding:8px;border:1px solid var(--line);background:#102433;color:var(--text);font:10px var(--mono)}
+    .map-layer-panel .layer-title{margin-top:6px}
+    .risk-pulse-zone{animation:riskPulse 2.4s ease-in-out infinite}
+    @keyframes riskPulse{0%,100%{stroke-opacity:.45;fill-opacity:.08}50%{stroke-opacity:1;fill-opacity:.25}}
     .distribution-list i.low,.timeline-dot.low{background:var(--green)}
     .distribution-list i.moderate,.timeline-dot.moderate{background:var(--amber)}
     .distribution-list i.high,.timeline-dot.high{background:var(--red)}
@@ -26,7 +30,7 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#top"><span class="brand-symbol">⌁</span><span><strong>LANDSLIDE</strong><b>SENTINEL</b></span><small>NER / INDIA</small></a>
+    <a class="brand" href="#top"><span class="brand-symbol">⌁</span><span><strong>TIMELASS</strong><b>NER MONITOR</b></span><small>NER / INDIA</small></a>
     <nav aria-label="Primary navigation"><a class="active" href="#overview">Overview</a><a href="#analytics">Analytics</a><a href="#guidance">Guidance</a></nav>
     <div class="top-actions"><span class="status-live"><i></i> System nominal</span><button class="ghost-button" id="report-open">＋ Report incident</button><button class="icon-button" id="menu-toggle" aria-label="Toggle navigation">☰</button></div>
   </header>
@@ -43,7 +47,7 @@
         <div class="map-wrap">
           <div id="map" aria-label="Interactive North Eastern India risk map"></div>
           <div class="map-overlay-label"><i></i> LIVE WEATHER FEED <span id="data-mode">● LIVE</span></div>
-          <div class="map-layer-panel"><p class="eyebrow">MAP LAYERS</p><label><input type="checkbox" id="risk-layer" checked> <span class="swatch risk-swatch"></span> Risk zones</label><label><input type="checkbox" id="rain-layer"> <span class="swatch rain-swatch"></span> Rainfall radar</label><label><input type="checkbox" id="reports-layer" checked> <span class="swatch report-swatch"></span> Citizen reports</label></div>
+          <div class="map-layer-panel"><p class="eyebrow">MAP STYLE</p><select id="map-style" aria-label="Select map style"><option value="satellite">Satellite</option><option value="hybrid">Satellite + English labels</option><option value="terrain">Terrain</option><option value="standard">Standard map</option></select><p class="eyebrow layer-title">MAP LAYERS</p><label><input type="checkbox" id="risk-layer" checked> <span class="swatch risk-swatch"></span> Risk zones</label><label><input type="checkbox" id="rain-layer"> <span class="swatch rain-swatch"></span> Rainfall radar</label><label><input type="checkbox" id="reports-layer" checked> <span class="swatch report-swatch"></span> Citizen reports</label></div>
           <div class="map-legend"><span><i class="low"></i> Low</span><span><i class="moderate"></i> Moderate</span><span><i class="high"></i> High</span><small>PROTOTYPE MODEL / NOT AN OFFICIAL WARNING</small></div>
         </div>
         <aside class="assessment-panel">
@@ -67,10 +71,20 @@
     <section class="shell guidance-section" id="guidance"><div><p class="eyebrow cyan">FIELD GUIDANCE / PUBLIC</p><h2>Small signals can<br><em>precede a slide.</em></h2><p>Leave early when conditions change. This prototype complements — never replaces — official advisories and local disaster-management instructions.</p><button class="solid-button" id="guidance-button">Read safety guide ↗</button></div><div class="guidance-list"><article><span>01</span><div><h3>Fresh cracks or tilting trees</h3><p>Move away from the slope, do not cross cracks, and report the location.</p></div></article><article><span>02</span><div><h3>Unusual sounds or water seepage</h3><p>Leave low-lying areas and follow the instructions of local authorities.</p></div></article><article><span>03</span><div><h3>Debris across a road</h3><p>Do not attempt to drive through it. Share a photo to help responders act.</p></div></article></div></section>
   </main>
   <section class="contact-section shell" id="contact"><p class="eyebrow cyan">CONTACT / PLATFORM OWNER</p><h2>Built for safer ground.</h2><p>AI-powered Landslide Risk Monitoring &amp; Early Warning Platform</p><a href="mailto:vibhukushwaha440@gmail.com">vibhukushwaha440@gmail.com ↗</a></section>
-  <footer class="footer shell"><span>LANDSLIDE SENTINEL / NER INDIA</span><span>Prototype decision-support system · Not an official warning service</span><span>Data: Open-Meteo · OpenStreetMap</span></footer>
+  <footer class="footer shell"><span>TIMELASS / NER INDIA</span><span>Prototype decision-support system · Not an official warning service</span><span>Data: Open-Meteo · OpenStreetMap</span></footer>
 
   <div class="modal" id="report-modal" aria-hidden="true"><div class="modal-backdrop" data-close-modal></div><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="report-title"><button class="close-button" id="report-close" aria-label="Close report form">×</button><p class="eyebrow cyan">CITIZEN SIGNAL / PROTOTYPE</p><h2 id="report-title">Report a landslide</h2><p class="modal-copy">Your report is stored locally in this prototype and appears on the map for this session. Do not use this form for emergencies.</p><form id="report-form"><label>Incident type<select name="observation"><option>Road blocked</option><option>Fresh ground movement</option><option>Debris on road</option><option>Crack / slope failure</option><option>Other</option></select></label><label>Location<input name="location" required placeholder="Village, district or landmark"></label><label>Description<textarea name="description" rows="3" placeholder="What did you observe?"></textarea></label><label>Photograph (optional)<input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></label><div class="form-location"><span>◎</span><span id="report-coordinates">No map location selected</span><button type="button" class="text-button" id="report-use-location">Use current location</button></div><button class="solid-button full" type="submit">Submit community report <span>↗</span></button></form><p class="form-success" id="form-success">Report received and added to the map.</p></section></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js"></script>
+  <script>
+    if (window.location.search.includes('map=india')) {
+      window.addEventListener('load', () => {
+        if (!sessionStorage.getItem('sentinel-cache-v2')) {
+          sessionStorage.setItem('sentinel-cache-v2', '1');
+          if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((registrations) => registrations.forEach((registration) => registration.update()));
+        }
+      });
+    }
+  </script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

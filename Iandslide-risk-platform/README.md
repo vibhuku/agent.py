@@ -1,6 +1,6 @@
-# Landslide Sentinel — NER India
+# Timelass — NER India
 
-Landslide Sentinel is a public-facing, dark command-center prototype for North Eastern India. It combines an interactive OpenStreetMap/Leaflet map, live Open-Meteo weather readings, a transparent prototype risk score, and locally persisted citizen reports.
+Timelass is a public-facing, dark command-center prototype for North Eastern India. It combines an interactive Leaflet GIS map with public Esri satellite/terrain/street tiles, live Open-Meteo weather readings, a transparent prototype risk score, and locally persisted citizen reports.
 
 > **Important:** risk scores are a prototype screening engine, not a scientifically validated forecast. The UI clearly labels demo/offline values and prototype advisories. It does not replace IMD, NDMA, SDMA, district administration, or emergency-service instructions.
 
@@ -16,6 +16,8 @@ python3 -m http.server 5500
 ```
 
 Open <http://localhost:5500>. The browser needs network access for OpenStreetMap tiles and Open-Meteo. If weather is unavailable, the assessment remains usable and is labelled `DEMO / OFFLINE`.
+
+The map opens in **Satellite** mode and supports Satellite, Satellite + English labels, Terrain, and Standard map styles. Satellite and terrain imagery are public Esri ArcGIS REST tiles with attribution rendered in the map. If a provider is unavailable, the style switcher remains usable and the browser reports the tile failure rather than presenting a static or fabricated image.
 
 ### Backend risk API
 
