@@ -17,6 +17,8 @@ const rainfallLayer = L.layerGroup();
 const riskColors = { Low: '#52d68b', Moderate: '#f3b64b', High: '#fa6671' };
 let selected = locations[0];
 let selectedCoords = { lat: selected.lat, lon: selected.lon };
+window.addEventListener('resize', () => map.invalidateSize());
+setTimeout(() => map.invalidateSize(), 100);
 
 function riskLevel(score) { return score >= 70 ? 'High' : score >= 40 ? 'Moderate' : 'Low'; }
 function addRiskMarkers() {
@@ -31,7 +33,14 @@ function addRiskMarkers() {
 }
 function addReports() {
   reports.clearLayers();
-  [...demoReports, ...JSON.parse(localStorage.getItem('ner-reports') || '[]')].forEach((report) => L.marker([report.lat, report.lon], { icon: L.divIcon({ className: 'report-marker', html: '⚑', iconSize: [24, 24] }) }).bindTooltip(report.text || 'Citizen report').addTo(reports));
+  let savedReports = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem('ner-reports') || '[]');
+    savedReports = Array.isArray(stored) ? stored.filter((report) => Number.isFinite(report.lat) && Number.isFinite(report.lon)) : [];
+  } catch {
+    localStorage.removeItem('ner-reports');
+  }
+  [...demoReports, ...savedReports].forEach((report) => L.marker([report.lat, report.lon], { icon: L.divIcon({ className: 'report-marker', html: '⚑', iconSize: [24, 24] }) }).bindTooltip(report.text || 'Citizen report').addTo(reports));
 }
 function addRainfallLayer() {
   rainfallLayer.clearLayers();
@@ -74,11 +83,50 @@ $('#search-button').addEventListener('click', searchLocation); $('#location-sear
 $('#risk-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(markers) : map.removeLayer(markers)); $('#reports-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(reports) : map.removeLayer(reports));
 addRainfallLayer();
 $('#rain-layer').addEventListener('change', (event) => event.target.checked ? map.addLayer(rainfallLayer) : map.removeLayer(rainfallLayer));
-$('#locate-button').addEventListener('click', () => navigator.geolocation?.getCurrentPosition((position) => { const location = { ...selected, name: 'Your location', region: 'GPS position / NER India', lat: position.coords.latitude, lon: position.coords.longitude }; selectLocation(location); }, () => alert('Location access was unavailable. Select a point on the map instead.')));
+$('#locate-button').addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    alert('Location access is unavailable. Select a point on the map instead.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition((position) => {
+    const { latitude: lat, longitude: lon } = position.coords;
+    if (lat < 21 || lat > 30 || lon < 87 || lon > 98) {
+      alert('Your location is outside the North Eastern Region monitoring area.');
+      return;
+    }
+    selectLocation({ ...selected, name: 'Your location', region: 'GPS position / NER India', lat, lon, code: 'GPS' });
+  }, () => alert('Location access was unavailable. Select a point on the map instead.'));
+});
 map.on('click', (event) => { const location = { ...selected, name: 'Selected map point', region: 'Coordinates / NER India', lat: event.latlng.lat, lon: event.latlng.lng, code: 'NER', score: 45, rain: 48, rain72: 92, slope: 55, terrain: 52 }; selectLocation(location); });
 document.querySelectorAll('[data-focus]').forEach((button) => button.addEventListener('click', () => selectLocation(locations.find((location) => location.name === 'Gangtok'))));
-const modal = $('#report-modal'); function toggleModal(open) { modal.classList.toggle('open', open); modal.setAttribute('aria-hidden', String(!open)); if (open) modal.querySelector('select').focus(); }
+const modal = $('#report-modal');
+function toggleModal(open) {
+  modal.classList.toggle('open', open);
+  modal.setAttribute('aria-hidden', String(!open));
+  if (open) {
+    $('#report-form').reset();
+    $('#report-form').style.display = 'grid';
+    $('#form-success').classList.remove('visible');
+    setText('report-coordinates', `${selectedCoords.lat.toFixed(4)}, ${selectedCoords.lon.toFixed(4)} (selected)`);
+    modal.querySelector('select').focus();
+  }
+}
 $('#report-open').addEventListener('click', () => toggleModal(true)); $('#report-open-secondary').addEventListener('click', () => toggleModal(true)); $('#report-close').addEventListener('click', () => toggleModal(false)); modal.querySelector('[data-close-modal]').addEventListener('click', () => toggleModal(false)); document.addEventListener('keydown', (event) => { if (event.key === 'Escape') toggleModal(false); });
 $('#report-use-location').addEventListener('click', () => { setText('report-coordinates', `${selectedCoords.lat.toFixed(4)}, ${selectedCoords.lon.toFixed(4)} (selected)`); });
-$('#report-form').addEventListener('submit', (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); const report = { lat: selectedCoords.lat, lon: selectedCoords.lon, text: `${form.get('observation')} · ${form.get('location')}` }; const stored = JSON.parse(localStorage.getItem('ner-reports') || '[]'); localStorage.setItem('ner-reports', JSON.stringify([...stored, report])); addReports(); event.currentTarget.style.display = 'none'; $('#form-success').classList.add('visible'); });
+$('#report-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  let stored = [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem('ner-reports') || '[]');
+    stored = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    localStorage.removeItem('ner-reports');
+  }
+  const report = { lat: selectedCoords.lat, lon: selectedCoords.lon, text: `${form.get('observation')} · ${form.get('location')}` };
+  localStorage.setItem('ner-reports', JSON.stringify([...stored, report]));
+  addReports();
+  event.currentTarget.style.display = 'none';
+  $('#form-success').classList.add('visible');
+});
 $('#menu-toggle').addEventListener('click', () => document.querySelector('nav').classList.toggle('mobile-open'));

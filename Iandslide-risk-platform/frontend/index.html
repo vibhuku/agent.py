@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="style.css">
   <style>
+    html,body{max-width:100%;overflow-x:hidden}
+    .map-layout{grid-template-columns:minmax(0,1fr)!important;min-width:0;width:100%;overflow:hidden}
+    .map-wrap,#map{min-width:0;width:100%;max-width:100%;overflow:hidden}
     .risk-readout.moderate,.risk-readout.high,.risk-readout.low{background:transparent}
     .distribution-list i.low,.timeline-dot.low{background:var(--green)}
     .distribution-list i.moderate,.timeline-dot.moderate{background:var(--amber)}
